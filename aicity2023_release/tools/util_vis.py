@@ -11,7 +11,6 @@ _CLASS_NAME = [
     "Text(Right)",   
     "Text(Left)",
     "Reaching behind",
-    "abc"
     "Adjust Control Pane",
     "Pick up from floor(Driver)",
     "Pick up from floor(Passenger)",
