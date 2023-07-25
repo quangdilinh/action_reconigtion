@@ -1,0 +1,26 @@
+# Ignore compiled output
+**/*.o
+*.pyc
+*.class
+*.pyth
+*.mp4
+**/*.MP4
+*.csv
+
+# Ignore temporary files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE-specific files and directories
+/.vscode
+/.idea
+
+# Ignore logs
+/logs/
+*.log
+
+# Ignore sensitive data (example: API keys)
+/secrets.txt
+
+# Ignore dependencies installed via package manager
+data/*/
