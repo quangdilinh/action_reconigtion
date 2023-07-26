@@ -3,8 +3,9 @@
 *.pyc
 *.class
 *.pyth
+*.pth
 *.mp4
-**/*.MP4
+*.MP4
 *.csv
 
 # Ignore temporary files
