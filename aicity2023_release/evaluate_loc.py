@@ -288,7 +288,7 @@ def get_args():
                         help='Perform evaluation only')
     parser.add_argument('--dist_eval', action='store_true', default=False,
                         help='Enabling distributed evaluation')
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=6, type=int)
     parser.add_argument('--pin_mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
     parser.add_argument('--no_pin_mem', action='store_false', dest='pin_mem')
@@ -472,14 +472,22 @@ def main(args, ds_init):
 
     start = time.time()
     dataset = VideoInferDataset(args.data_path, video_csv, frame_sample_rate=args.sampling_rate, clip_stride=args.clip_stride, crop=args.crop, view=args.view)
-    test_loader = torch.utils.data.DataLoader(dataset, batch_size=8, num_workers=8)
+    test_loader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=1)
 
 
     row_data = []
     model.eval()
-    for idx, batch in enumerate(test_loader):
-        if idx % 10 == 0:
-            print("Processed {} batch".format(idx))
+    print("len test_loader {}".format(len(test_loader)))
+    from tqdm import tqdm
+    from time import process_time
+    t1_start = process_time()
+    # for idx, batch in enumerate(test_loader):
+    for batch in tqdm(test_loader):
+        # if idx == 0: print(batch)
+        
+        # if idx % 10 == 0:
+        #     print("Processed {} batch {}".format(idx,process_time() - t1_start))
+        #     t1_start = process_time()
         input_data = batch[0]
         with torch.no_grad():
             if args.model_ema:
