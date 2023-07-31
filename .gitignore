@@ -8,6 +8,8 @@
 *.MP4
 *.csv
 *.xlsx
+*.pkl
+*.zip
 
 # Ignore temporary files
 .DS_Store
