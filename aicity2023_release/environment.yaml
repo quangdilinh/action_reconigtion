@@ -5,7 +5,7 @@ channels:
 dependencies:
   - _libgcc_mutex
   - aom
-  - av
+  - av=10.0.0
   - blas
   - bzip2
   - ca-certificates
@@ -53,8 +53,8 @@ dependencies:
   - pip
   - portalocker
   - pthread-stubs
-  - python
-  - python_abi
+  - python=3.9.1
+  - python_abi=3.9
   - pytorch=1.9.0
   - six
   - svt-av1

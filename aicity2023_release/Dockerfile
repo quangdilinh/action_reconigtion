@@ -5,6 +5,7 @@ FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu18.04
 
 # Install system-level dependencies if needed
 
+
 # Install and update pip
 RUN apt-get update && \ 
     apt-get install -y python3-pip && \ 
@@ -22,8 +23,9 @@ RUN apt-get update && \
     wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     /bin/bash /tmp/miniconda.sh -b -p /opt/conda && \
     rm /tmp/miniconda.sh && \
-    /opt/conda/bin/conda update -n base -c defaults conda && \
-    /opt/conda/bin/conda env create -f /tmp/environment.yaml && \
+    /opt/conda/bin/conda update -n base -c defaults conda
+
+RUN /opt/conda/bin/conda env create -f /tmp/environment.yaml && \
     /opt/conda/bin/conda clean -afy && \
     rm /tmp/environment.yaml
 
@@ -39,6 +41,84 @@ ENV CONDA_DEFAULT_ENV $conda_env
 WORKDIR /home/code
 
 # Copy any additional files or scripts into the container if needed
+# install detectron2 
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y \
+	python3-opencv ca-certificates python3-dev git wget sudo ninja-build
+# install dependencies
+# See https://pytorch.org/ for other options if you use a different version of CUDA
+RUN pip install --user tensorboard cmake onnx 
+RUN pip install --user torch==1.10 torchvision==0.11.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+RUN pip install --user 'git+https://github.com/facebookresearch/fvcore'
+# install detectron2
+RUN git clone https://github.com/facebookresearch/detectron2 detectron2_repo
+# set FORCE_CUDA because during `docker build` cuda is not accessible
+ENV FORCE_CUDA="1"
+# This will by default build detectron2 for all common cuda architectures and take a lot more time,
+# because inside `docker build`, there is no way to tell which architecture will be used.
+ARG TORCH_CUDA_ARCH_LIST="Kepler;Kepler+Tesla;Maxwell;Maxwell+Tegra;Pascal;Volta;Turing"
+ENV TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}"
+RUN pip install --user -e detectron2_repo
+# Set a fixed model cache directory.
+ENV FVCORE_CACHE="/tmp"
+
+#install decord
+
+RUN apt-get -y update && apt-get install -y \
+    software-properties-common \
+    build-essential \
+    checkinstall \
+    cmake \
+    make \
+    pkg-config \
+    yasm \
+    git \
+    vim \
+    curl \
+    wget \
+    zip \
+    sudo \
+    apt-transport-https \
+    libcanberra-gtk-module \
+    libcanberra-gtk3-module \
+    dbus-x11 \
+    iputils-ping \
+    python3-dev \
+    python3-pip \
+    python3-setuptools
+
+# some image/media dependencies
+RUN apt-get -y update && apt-get install -y \
+    libjpeg8-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libtiff-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libdc1394-22-dev \
+    libxine2-dev \
+    libavfilter-dev  \
+    libavutil-dev
+
+RUN apt-get -y update && apt-get install -y ffmpeg  
+
+RUN apt-get clean && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* && apt-get -y autoremove
+ENV VIDEO_CODEC_SDK_VERSION="12.0.16"
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ADD Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}.zip .
+RUN unzip Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}.zip \
+    && cp Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}/Interface/cuviddec.h /usr/local/cuda/targets/x86_64-linux/include \
+    && cp Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}/Interface/nvcuvid.h /usr/local/cuda/targets/x86_64-linux/include \
+    && cp Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}/Lib/linux/stubs/x86_64/libnvidia-encode.so /usr/local/cuda/targets/x86_64-linux/lib \
+    && cp Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}/Lib/linux/stubs/x86_64/libnvcuvid.so /usr/local/cuda/targets/x86_64-linux/lib \
+    # && cp Video_Codec_SDK_${VIDEO_CODEC_SDK_VERSION}/libnvcuvid.so.1 /usr/local/cuda/targets/x86_64-linux/lib \
+    && ldconfig
+RUN git clone --recursive https://github.com/dmlc/decord
+RUN cd decord && mkdir build && cd build && cmake .. -DUSE_CUDA=ON -DCMAKE_BUILD_TYPE=Release && make -j24 && cd ../python && python3 setup.py install
+RUN rm /usr/local/cuda/targets/x86_64-linux/lib/libnvidia-encode.so \
+    && rm /usr/local/cuda/targets/x86_64-linux/lib/libnvcuvid.so.1 \
+    && rm /usr/local/cuda/targets/x86_64-linux/lib/libnvcuvid.so
 
 # Set the entrypoint or command for your container 
 CMD ["bash"]    
