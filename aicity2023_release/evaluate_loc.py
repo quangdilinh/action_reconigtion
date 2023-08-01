@@ -97,14 +97,14 @@ class VideoInferDataset(Dataset):
                 buffer = buffer[:, 128:, 128:, :]
             buffer = self.data_resize(buffer)
             buffer = self.data_transform(buffer)
-            try:
-                if self.current_path != self.last_path:
-                    print("getting {}".format(self.data_samples[index]))
-                    self.last_path = self.current_path
-            except:
-                print("getting {}".format(self.data_samples[index]))
-                self.last_path = self.current_path
-                pass
+            # try:
+            #     if self.current_path != self.last_path:
+                    # print("getting {}".format(self.data_samples[index]))
+                    # self.last_path = self.current_path
+            # except:
+                # print("getting {}".format(self.data_samples[index]))
+                # self.last_path = self.current_path
+                # pass
             return buffer, sample.split("/")[-1].split(".")[0], t_index
         except Exception:
             print("error at {}".format(self.current_path), Exception)
@@ -344,7 +344,7 @@ def get_args():
 @torch.no_grad()
 def inference_video(model, video_path, num_frames, sampling_rate, fps=30, batch_size=8):
     video_reader = decord.VideoReader(video_path, height=224, width=224, num_threads=0, ctx=decord.cpu(0))
-    print(f"video path = {video_path}")
+    # print(f"video path = {video_path}")
     vlen = len(video_reader)
     clip_num = math.floor(vlen / fps)
     clip_batch = []
@@ -381,7 +381,7 @@ def seed_everything(seed):
 
 
 def main(args, ds_init):
-    pprint(vars(args))
+    # pprint(vars(args))
     seed = args.seed + utils.get_rank()
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -530,7 +530,7 @@ def main(args, ds_init):
         pickle.dump(vmae_16x4, f)
 
     end = time.time()
-    print("Costing:", end - start)
+    print("Costing: {} s".format(end - start))
 
 if __name__ == '__main__':
     opts, ds_init = get_args()
