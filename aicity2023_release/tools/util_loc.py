@@ -152,10 +152,10 @@ def merge_and_remove(clip_classification, merge_threshold=16):
         vid_all = pd.DataFrame([[0, 0, 0, 0]], columns=["video_id", "label", "start", "end"])
         for action_label in vid_action_labels:
             data_video_label = merge_same_action(vid_clip_classification, action_label, merge_threshold)
-            vid_all = vid_all.append(data_video_label)
+            vid_all = vid_all._append(data_video_label)
         
         vid_all = process_overlap(vid_all)
-        output = output.append(vid_all)
+        output = output._append(vid_all)
     output = output[output["end"]!=0]
     output = remove_noisy_action(output, noise_length_threshold=2)
     output = output.sort_values(by=["video_id", "start"])
