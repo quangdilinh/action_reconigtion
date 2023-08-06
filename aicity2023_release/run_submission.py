@@ -26,7 +26,7 @@ _FILENAME_TO_ID = {
     "Rear_view_user_id_42897_NoAudio_7":4,
     "Rear_view_user_id_49989_NoAudio_5":5,
     "Rear_view_user_id_49989_NoAudio_7":6,
-    "Rear_view_user_id_51953_NoAudio_3_2":7,
+    "Rear_view_user_id_51953_NoAudio_3":7,
     "Rear_view_user_id_51953_NoAudio_7":8,
     "Rear_view_user_id_96715_NoAudio_5":9,
     "Rear_view_user_id_96715_NoAudio_7":10,
@@ -37,7 +37,7 @@ _FILENAME_TO_ID = {
     "Dashboard_user_id_49989_NoAudio_5":5,
     "Dashboard_user_id_49989_NoAudio_7":6,
     "Dashboard_user_id_51953_NoAudio_3":7,
-    "Dashboard_user_id_51953_NoAudio_7_2":8,
+    "Dashboard_user_id_51953_NoAudio_7":8,
     "Dashboard_user_id_96715_NoAudio_5":9,
     "Dashboard_user_id_96715_NoAudio_7":10,
     "Right_side_window_user_id_26223_NoAudio_3":1,
@@ -134,11 +134,11 @@ def main():
     print(k_flod_right_probs[0].keys())
     for right_vid in k_flod_right_probs[0].keys():
         dash_vid = "Dashboard_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
-        if dash_vid == "Dashboard_user_id_51953_NoAudio_7":
-            dash_vid = "Dashboard_user_id_51953_NoAudio_7_2"
+        # if dash_vid == "Dashboard_user_id_51953_NoAudio_7":
+        #     dash_vid = "Dashboard_user_id_51953_NoAudio_7_2"
         rear_vid = "Rear_view_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
-        if rear_vid == "Rear_view_user_id_51953_NoAudio_3":
-            rear_vid = "Rear_view_user_id_51953_NoAudio_3_2"
+        # if rear_vid == "Rear_view_user_id_51953_NoAudio_3":
+        #     rear_vid = "Rear_view_user_id_51953_NoAudio_3_2"
 
         all_dash_probs = np.stack([np.array(list(map(np.array, dash_prob[dash_vid]))) for dash_prob in k_flod_dash_probs])
         all_right_probs = np.stack([np.array(list(map(np.array, right_prob[right_vid]))) for right_prob in k_flod_right_probs])

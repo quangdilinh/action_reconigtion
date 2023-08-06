@@ -136,6 +136,7 @@ def remove_noisy_action(noisy_actions, noise_length_threshold=2):
     clean_actions = clean_actions.drop(columns=['index'])
     return clean_actions
 
+
 def merge_and_remove(clip_classification, merge_threshold=16):
     """
     1-cluster clip level classification to action segments

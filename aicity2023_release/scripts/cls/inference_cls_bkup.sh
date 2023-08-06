@@ -14,7 +14,7 @@ CUDA_VISIBLE_DEVICES=0 python evaluate_loc.py \
     --finetune ${MODEL_PATH} \
     --log_dir ${OUTPUT_DIR} \
     --output_dir ${OUTPUT_DIR} \
-    --batch_size 8 \
+    --batch_size 6 \
     --num_worker 6 \
     --num_sample 1 \
     --input_size 224 \
