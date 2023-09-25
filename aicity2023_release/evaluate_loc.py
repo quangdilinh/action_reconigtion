@@ -491,7 +491,7 @@ def main(args, ds_init):
 
     row_data = []
     model.eval()
-    print("len test_loader {}".format(len(test_loader)))
+    # print("len test_loader {}".format(len(test_loader)))
     from tqdm import tqdm
     from time import process_time
     t1_start = process_time()
@@ -530,7 +530,8 @@ def main(args, ds_init):
         pickle.dump(vmae_16x4, f)
 
     end = time.time()
-    print("Costing: {} s".format(end - start))
+    duration = datetime.timedelta(seconds=end - start)
+    print("Costing: {} s".format(duration))
 
 if __name__ == '__main__':
     opts, ds_init = get_args()

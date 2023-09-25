@@ -18,7 +18,9 @@ from matplotlib.pyplot import MultipleLocator
 from tools import util_loc
 from tools import util_vis
 from tools import util_eval
+from pprint import pprint
 
+# key: value = {file_name: video_id}
 _FILENAME_TO_ID = {
     "Rear_view_user_id_26223_NoAudio_3":1,
     "Rear_view_user_id_26223_NoAudio_5":2,
@@ -52,7 +54,12 @@ _FILENAME_TO_ID = {
     "Right_side_window_user_id_96715_NoAudio_7":10,
 }
     
+
+    
 def get_classification(sequence_class_prob):
+    '''
+        given list of class and prob return the max index and prob
+    '''
     labels_index = np.argmax(sequence_class_prob, axis=1)
     probs= np.max(sequence_class_prob, axis=1)  
     return labels_index, probs
@@ -60,6 +67,7 @@ def get_classification(sequence_class_prob):
 def activity_localization(prob_sq, vid, action_threshold):
     """
     利用阈值对时序得分曲线二值化，确定最有可能含有动作的时间区间
+    Use thresholds to binarize the timing score curve to determine the time interval most likely to contain actions.
     """
     action_idx, action_probs = get_classification(prob_sq)
     action_tag = np.zeros(action_idx.shape)
@@ -84,7 +92,9 @@ def smoothing(x, k=3):
     size. window size = 2*k
     '''
     l = len(x)
+    # array from -k to l-1 with step size 1
     s = np.arange(-k, l - k)
+    # array from k to l+k with step size 1
     e = np.arange(k, l + k)
     s[s < 0] = 0
     e[e >= l] = l - 1
@@ -108,6 +118,10 @@ def load_k_fold_probs(pickle_dir, view, k=5):
     
 
 def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
+    '''
+        add buffer to result
+        prioritize result manually
+    '''
     alpha, beta, sigma = 0.3, 0.4, 0.3
     prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
     prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
@@ -122,9 +136,16 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
 
 
 def main():
+    '''
+        1. load the view
+        2. with every right_view prob 
+            2.1 find the dash_vd and rear_vd name
+            2.2 with every element in pickcle result, create dictionary of video name with every view
+    '''
     localization = []
     clip_classification = []
     pickle_dir = "pickles/A2"
+    # format: ['filename', 'clip_idx', "prob"]
     k_flod_dash_probs = load_k_fold_probs(pickle_dir, "dash")
     k_flod_right_probs = load_k_fold_probs(pickle_dir, "right")
     k_flod_rear_probs = load_k_fold_probs(pickle_dir, "rear")
