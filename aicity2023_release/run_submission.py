@@ -155,11 +155,7 @@ def main():
     print(k_flod_right_probs[0].keys())
     for right_vid in k_flod_right_probs[0].keys():
         dash_vid = "Dashboard_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
-        # if dash_vid == "Dashboard_user_id_51953_NoAudio_7":
-        #     dash_vid = "Dashboard_user_id_51953_NoAudio_7_2"
         rear_vid = "Rear_view_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
-        # if rear_vid == "Rear_view_user_id_51953_NoAudio_3":
-        #     rear_vid = "Rear_view_user_id_51953_NoAudio_3_2"
 
         all_dash_probs = np.stack([np.array(list(map(np.array, dash_prob[dash_vid]))) for dash_prob in k_flod_dash_probs])
         all_right_probs = np.stack([np.array(list(map(np.array, right_prob[right_vid]))) for right_prob in k_flod_right_probs])

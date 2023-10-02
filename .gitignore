@@ -28,3 +28,8 @@ Thumbs.db
 
 # Ignore dependencies installed via package manager
 data/*/
+aicity2023_release/pickles/A2/A1_dash_vmae_16x4_crop_fold_0.pkl
+aicity2023_release/pickles/A2/A1_dash_vmae_16x4_crop_fold_1.pkl
+aicity2023_release/pickles/A2/A1_dash_vmae_16x4_crop_fold_2.pkl
+aicity2023_release/pickles/A2/A1_dash_vmae_16x4_crop_fold_3.pkl
+aicity2023_release/pickles/A2/A1_dash_vmae_16x4_crop_fold_4.pkl
