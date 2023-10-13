@@ -8,7 +8,7 @@ NUM_FRAMES=16
 SAMPLING_RATE=4
 WEIGHT_DECAY=0.05
 LEARNING_RATE=2e-3
-CLIP_STRIDE=35
+CLIP_STRIDE=30
 
 MODEL_PATH='./checkpoints/dash_0.pth'
 # batch_size can be adjusted according to the number of GPUs
