@@ -11,7 +11,7 @@ WEIGHT_DECAY=0.05
 LEARNING_RATE=2e-3
 
 # Define an array of sampling rates
-SAMPLING_RATES=(1 30 15 10 20)
+SAMPLING_RATES=(15 10 20)
 
 # Define an array of clip strides
 CLIP_STRIDES=(30 15 10 20)
@@ -24,7 +24,6 @@ folds=(0 1 2 3 4)
 create_new_directory() {
   local NEW_DIR="$1"
   mkdir -p "$NEW_DIR"
-  echo "$clip_stride $sampling_rate $view $fold" > "$NEW_DIR/inference_checkpoint.txt"
 }
 
 # Function to run model evaluation
@@ -61,6 +60,9 @@ run_model_evaluation() {
     --lr "$LEARNING_RATE" \
     --clip_stride "$clip_stride" \
     --crop
+  
+  # Copy the weight file to NEW_DIR
+  cp "$OUTPUT_DIR/A1_${view}_vmae_16x4_crop_fold_${fold}.pkl" "$NEW_DIR/"
 }
 
 # Function to create a params.txt file with input parameters
@@ -77,7 +79,7 @@ create_params_file() {
 }
 
 # Central checkpoint file
-CHECKPOINT_FILE="inference_checkpoint.txt"
+CHECKPOINT_FILE="pickles/inference_checkpoint.txt"
 
 # Check if a central inference checkpoint file exists and resume from it
 if [ -f "$CHECKPOINT_FILE" ]; then
