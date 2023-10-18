@@ -8,7 +8,7 @@ NUM_WORKER=6
 NUM_SAMPLE=1
 NUM_FRAMES=16
 WEIGHT_DECAY=0.05
-LEARNING_RATE=2e-3
+LEARNING_RATE=0.002
 
 # Define an array of sampling rates
 SAMPLING_RATES=(15 10 20)
@@ -100,7 +100,11 @@ for clip_stride in "${CLIP_STRIDES[@]}"; do
           found_checkpoint=true
         fi
 
+        
         if [ "$found_checkpoint" = true ]; then
+          # Update the central checkpoint file
+          echo "$clip_stride $sampling_rate $view $fold" > "$CHECKPOINT_FILE"
+
           # Get the current parameter values
           NEW_DIR="pickles/${BATCH_SIZE}_${NUM_WORKER}_${NUM_SAMPLE}_${NUM_FRAMES}_${sampling_rate}_${WEIGHT_DECAY}_${LEARNING_RATE}_${clip_stride}"
 
@@ -115,5 +119,9 @@ for clip_stride in "${CLIP_STRIDES[@]}"; do
         fi
       done
     done
+    # clear checkpoint after finished param
+    rm "$CHECKPOINT_FILE"
+    python run_submission.py
+    cp "$OUTPUT_DIR/A2_submission.txt" "$NEW_DIR/"
   done
 done
