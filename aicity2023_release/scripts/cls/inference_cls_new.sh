@@ -1,4 +1,7 @@
 #!/bin/bash
+# Set the script to exit on error and unset variable
+set -e
+set -u
 
 # Set the path to save checkpoints
 OUTPUT_DIR='pickles/A2'
@@ -64,6 +67,35 @@ run_model_evaluation() {
   # Copy the weight file to NEW_DIR
   cp "$OUTPUT_DIR/A1_${view}_vmae_16x4_crop_fold_${fold}.pkl" "$NEW_DIR/"
 }
+run_model_evaluation_with_retry() {
+  local view="$1"
+  local fold="$2"
+  local clip_stride="$3"
+  local sampling_rate="$4"
+  local NEW_DIR="$5"
+  local max_retries=3
+  local retry_count=0
+
+  while [ $retry_count -lt $max_retries ]; do
+    echo "Running evaluation for view: $view, fold: $fold, clip_stride: $clip_stride, sampling_rate: $sampling_rate (Attempt $((retry_count+1)))"
+    run_model_evaluation "$view" "$fold" "$clip_stride" "$sampling_rate" "$NEW_DIR"
+
+    if [ $? -eq 0 ]; then
+      # Evaluation successful, break out of the retry loop
+      break
+    else
+      # Evaluation failed, increment the retry count and sleep for a while before retrying
+      retry_count=$((retry_count+1))
+      sleep 10  # You can adjust the sleep duration as needed
+    fi
+  done
+
+  # Check if the maximum number of retries has been reached
+  if [ $retry_count -eq $max_retries ]; then
+    echo "Max retries reached for view: $view, fold: $fold, clip_stride: $clip_stride, sampling_rate: $sampling_rate. Ending the script."
+    exit 1
+  fi
+}
 
 # Function to create a params.txt file with input parameters
 create_params_file() {
@@ -76,7 +108,9 @@ create_params_file() {
   echo "WEIGHT_DECAY=$WEIGHT_DECAY" >> "$NEW_DIR/params.txt"
   echo "LEARNING_RATE=$LEARNING_RATE" >> "$NEW_DIR/params.txt"
   echo "CLIP_STRIDE=$clip_stride" >> "$NEW_DIR/params.txt"
-}
+  echo "BATCH_SIZE=$BATCH_SIZE NUM_WORKER=$NUM_WORKER NUM_SAMPLE=$NUM_SAMPLE NUM_FRAMES=$NUM_FRAMES"
+  echo "SAMPLING_RATE=$sampling_rate WEIGHT_DECAY=$WEIGHT_DECAY LEARNING_RATE=$LEARNING_RATE CLIP_STRIDE=$clip_stride"
+  }
 
 # Central checkpoint file
 CHECKPOINT_FILE="pickles/inference_checkpoint.txt"
@@ -93,11 +127,18 @@ fi
 # Main loop to iterate through parameter combinations
 for clip_stride in "${CLIP_STRIDES[@]}"; do
   for sampling_rate in "${SAMPLING_RATES[@]}"; do
+    NEW_DIR="pickles/${BATCH_SIZE}_${NUM_WORKER}_${NUM_SAMPLE}_${NUM_FRAMES}_${sampling_rate}_${WEIGHT_DECAY}_${LEARNING_RATE}_${clip_stride}"
+
+    create_new_directory "$NEW_DIR"
+    create_params_file "$NEW_DIR"
+    
     for view in "${views[@]}"; do
       for fold in "${folds[@]}"; do
         # Skip until the checkpoint values are reached
-        if [ "$clip_stride" -eq "$checkpoint_clip_stride" ] && [ "$sampling_rate" -eq "$checkpoint_sampling_rate" ] && [ "$view" = "$checkpoint_view" ] && [ "$fold" -eq "$checkpoint_fold" ]; then
-          found_checkpoint=true
+        if [ "$found_checkpoint" = false ]; then
+          if [ "$clip_stride" -eq "$checkpoint_clip_stride" ] && [ "$sampling_rate" -eq "$checkpoint_sampling_rate" ] && [ "$view" = "$checkpoint_view" ] && [ "$fold" -eq "$checkpoint_fold" ]; then
+            found_checkpoint=true
+          fi
         fi
 
         
@@ -106,11 +147,8 @@ for clip_stride in "${CLIP_STRIDES[@]}"; do
           echo "$clip_stride $sampling_rate $view $fold" > "$CHECKPOINT_FILE"
 
           # Get the current parameter values
-          NEW_DIR="pickles/${BATCH_SIZE}_${NUM_WORKER}_${NUM_SAMPLE}_${NUM_FRAMES}_${sampling_rate}_${WEIGHT_DECAY}_${LEARNING_RATE}_${clip_stride}"
-
-          create_new_directory "$NEW_DIR"
-          create_params_file "$NEW_DIR"
-          run_model_evaluation "$view" "$fold" "$clip_stride" "$sampling_rate" "$NEW_DIR"
+          
+          run_model_evaluation_with_retry "$view" "$fold" "$clip_stride" "$sampling_rate" "$NEW_DIR"
           
           # Update the central checkpoint file
           echo "$clip_stride $sampling_rate $view $fold" > "$CHECKPOINT_FILE"
@@ -119,9 +157,11 @@ for clip_stride in "${CLIP_STRIDES[@]}"; do
         fi
       done
     done
-    # clear checkpoint after finished param
-    rm "$CHECKPOINT_FILE"
-    python run_submission.py
-    cp "$OUTPUT_DIR/A2_submission.txt" "$NEW_DIR/"
+    if [ "$found_checkpoint" = true ]; then
+      # clear checkpoint after finished param
+      rm "$CHECKPOINT_FILE"
+      python run_submission.py
+      cp "A2_submission.txt" "$NEW_DIR/"
+    fi
   done
 done
