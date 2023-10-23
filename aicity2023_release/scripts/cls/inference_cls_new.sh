@@ -1,7 +1,5 @@
 #!/bin/bash
 # Set the script to exit on error and unset variable
-set -e
-set -u
 
 # Set the path to save checkpoints
 OUTPUT_DIR='pickles/A2'
@@ -67,6 +65,8 @@ run_model_evaluation() {
   # Copy the weight file to NEW_DIR
   cp "$OUTPUT_DIR/A1_${view}_vmae_16x4_crop_fold_${fold}.pkl" "$NEW_DIR/"
 }
+
+
 run_model_evaluation_with_retry() {
   local view="$1"
   local fold="$2"
@@ -86,7 +86,7 @@ run_model_evaluation_with_retry() {
     else
       # Evaluation failed, increment the retry count and sleep for a while before retrying
       retry_count=$((retry_count+1))
-      sleep 10  # You can adjust the sleep duration as needed
+      sleep 100  # You can adjust the sleep duration as needed
     fi
   done
 
@@ -96,6 +96,7 @@ run_model_evaluation_with_retry() {
     exit 1
   fi
 }
+
 
 # Function to create a params.txt file with input parameters
 create_params_file() {
@@ -111,6 +112,8 @@ create_params_file() {
   echo "BATCH_SIZE=$BATCH_SIZE NUM_WORKER=$NUM_WORKER NUM_SAMPLE=$NUM_SAMPLE NUM_FRAMES=$NUM_FRAMES"
   echo "SAMPLING_RATE=$sampling_rate WEIGHT_DECAY=$WEIGHT_DECAY LEARNING_RATE=$LEARNING_RATE CLIP_STRIDE=$clip_stride"
   }
+
+
 
 # Central checkpoint file
 CHECKPOINT_FILE="pickles/inference_checkpoint.txt"
