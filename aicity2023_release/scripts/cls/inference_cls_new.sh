@@ -4,7 +4,7 @@
 # Set the path to save checkpoints
 OUTPUT_DIR='pickles/A2'
 DATA_PATH='data/A2/'
-BATCH_SIZE=6
+BATCH_SIZE=12
 NUM_WORKER=6
 NUM_SAMPLE=1
 NUM_FRAMES=16
@@ -131,9 +131,10 @@ fi
 for clip_stride in "${CLIP_STRIDES[@]}"; do
   for sampling_rate in "${SAMPLING_RATES[@]}"; do
     NEW_DIR="pickles/${BATCH_SIZE}_${NUM_WORKER}_${NUM_SAMPLE}_${NUM_FRAMES}_${sampling_rate}_${WEIGHT_DECAY}_${LEARNING_RATE}_${clip_stride}"
-
-    create_new_directory "$NEW_DIR"
-    create_params_file "$NEW_DIR"
+    if [ "$found_checkpoint" = true ]; then
+      create_new_directory "$NEW_DIR"
+      create_params_file "$NEW_DIR"
+    fi
     
     for view in "${views[@]}"; do
       for fold in "${folds[@]}"; do
