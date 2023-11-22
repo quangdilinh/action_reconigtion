@@ -12,10 +12,10 @@ WEIGHT_DECAY=0.05
 LEARNING_RATE=0.002
 
 # Define an array of sampling rates
-SAMPLING_RATES=(15 10 20)
+SAMPLING_RATES=(5 6 7 8 9 10)
 
 # Define an array of clip strides
-CLIP_STRIDES=(30 15 10 20)
+CLIP_STRIDES=(30)
 
 # Define the views and folds
 views=("dash" "right" "rear")
@@ -62,8 +62,17 @@ run_model_evaluation() {
     --clip_stride "$clip_stride" \
     --crop
   
-  # Copy the weight file to NEW_DIR
-  cp "$OUTPUT_DIR/A1_${view}_vmae_16x4_crop_fold_${fold}.pkl" "$NEW_DIR/"
+  if [[ $? -eq 0 ]]; then
+    # Copy the weight file to NEW_DIR
+    cp "$OUTPUT_DIR/A1_${view}_vmae_16x4_crop_fold_${fold}.pkl" "$NEW_DIR/"
+    echo "Evaluation succeeded"
+    return 0
+  else
+    # Handle the error condition here
+    echo "Evaluation failed"
+    return 1
+  fi
+  
 }
 
 
@@ -75,6 +84,7 @@ run_model_evaluation_with_retry() {
   local NEW_DIR="$5"
   local max_retries=3
   local retry_count=0
+  local gap_btw_retry=5
 
   while [ $retry_count -lt $max_retries ]; do
     echo "Running evaluation for view: $view, fold: $fold, clip_stride: $clip_stride, sampling_rate: $sampling_rate (Attempt $((retry_count+1)))"
@@ -86,7 +96,9 @@ run_model_evaluation_with_retry() {
     else
       # Evaluation failed, increment the retry count and sleep for a while before retrying
       retry_count=$((retry_count+1))
-      sleep 100  # You can adjust the sleep duration as needed
+      echo "Sleeping for $gap_btw_retry s"
+      sleep $gap_btw_retry  # You can adjust the sleep duration as needed
+
     fi
   done
 
