@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import pickle
-import torch
+# import torch
 import tqdm
 
 import os 
@@ -58,10 +58,10 @@ _FILENAME_TO_ID = {
     
 def get_classification(sequence_class_prob):
     '''
-        given list of class and prob return the max index and prob
+        given list of class and prob return the max_label and prob
     '''
     labels_index = np.argmax(sequence_class_prob, axis=1)
-    probs= np.max(sequence_class_prob, axis=1)  
+    probs= np.max(sequence_class_prob, axis=1)
     return labels_index, probs
 
 def activity_localization(prob_sq, vid, action_threshold):
@@ -108,6 +108,8 @@ def smoothing(x, k=3):
 
 
 def load_k_fold_probs(pickle_dir, view, k=5):
+
+
     probs = []
     for i in range(k):
         with open(os.path.join(pickle_dir, "A1_{}_vmae_16x4_crop_fold_{}.pkl".format(view, i)), "rb") as fp:
@@ -116,12 +118,12 @@ def load_k_fold_probs(pickle_dir, view, k=5):
     return probs
         
     
-
 def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
     '''
         add buffer to result
-        prioritize result manually
+        prioritize result overrall by view manually by grant higher weight
     '''
+
     alpha, beta, sigma = 0.3, 0.4, 0.3
     prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
     prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
@@ -138,14 +140,15 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
 def main():
     '''
         1. load the view
-        2. with every right_view prob 
+        2. with every right_view prob
             2.1 find the dash_vd and rear_vd name
             2.2 with every element in pickcle result, create dictionary of video name with every view
+
     '''
     localization = []
     clip_classification = []
     pickle_dir = "pickles/A2"
-    # format: ['filename', 'clip_idx', "prob"]
+    # each view & fold will have pickel format: ['filename', 'clip_idx', "prob"]
     k_flod_dash_probs = load_k_fold_probs(pickle_dir, "dash")
     k_flod_right_probs = load_k_fold_probs(pickle_dir, "right")
     k_flod_rear_probs = load_k_fold_probs(pickle_dir, "rear")
@@ -160,7 +163,6 @@ def main():
         all_dash_probs = np.stack([np.array(list(map(np.array, dash_prob[dash_vid]))) for dash_prob in k_flod_dash_probs])
         all_right_probs = np.stack([np.array(list(map(np.array, right_prob[right_vid]))) for right_prob in k_flod_right_probs])
         all_rear_probs = np.stack([np.array(list(map(np.array, rear_prob[rear_vid]))) for rear_prob in k_flod_rear_probs])
-
 
         avg_dash_seq = np.mean(all_dash_probs, axis=0)
         avg_right_seq = np.mean(all_right_probs, axis=0)
