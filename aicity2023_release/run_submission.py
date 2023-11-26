@@ -68,7 +68,12 @@ def activity_localization(prob_sq, vid, action_threshold):
     """
     利用阈值对时序得分曲线二值化，确定最有可能含有动作的时间区间
     Use thresholds to binarize the timing score curve to determine the time interval most likely to contain actions.
+    
+    prob_sq: sequence of probs for each class of action:
+    [action_id, prob]
+    action_id are from 0 - 15
     """
+    
     action_idx, action_probs = get_classification(prob_sq)
     action_tag = np.zeros(action_idx.shape)
     action_tag[action_probs >= action_threshold] = 1
@@ -84,7 +89,15 @@ def activity_localization(prob_sq, vid, action_threshold):
             startings.append(start)
             endings.append(end)
             clip_classfication.append([int(vid), action_idx[i], start, end])
-
+    ''' 
+    returned clip_classification:
+        [
+            video_id,
+            action_idx at activity aboved thread hold,
+            start: index start,
+            end: index end = start +1
+        ]
+    '''
     return clip_classfication
 
 def smoothing(x, k=3):
@@ -124,6 +137,18 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
         prioritize result overrall by view manually by grant higher weight
     '''
 
+    # alpha, beta, sigma = 0.3, 0.4, 0.3
+    '''
+        alpha: weight for dashboard
+        beta: weight for right
+        sigma: weight for rear
+    selectively get the probability by view
+        rear: 3, 14
+        right: 5, 6, 7, 8, 15 -> rest
+        dash: 13
+        avg by view weight: 0, 1, 2, 4,9,10,11,12
+
+    '''
     alpha, beta, sigma = 0.3, 0.4, 0.3
     prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
     prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
@@ -159,6 +184,12 @@ def main():
     for right_vid in k_flod_right_probs[0].keys():
         dash_vid = "Dashboard_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
         rear_vid = "Rear_view_"+re.search("user_id_[0-9]{5}_NoAudio_[0-9]", right_vid)[0]
+
+        '''
+            dash_prob: {
+                dash_vid: probs np.array of probs that vid
+            }
+        '''
 
         all_dash_probs = np.stack([np.array(list(map(np.array, dash_prob[dash_vid]))) for dash_prob in k_flod_dash_probs])
         all_right_probs = np.stack([np.array(list(map(np.array, right_prob[right_vid]))) for right_prob in k_flod_right_probs])

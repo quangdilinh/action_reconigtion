@@ -114,17 +114,25 @@ def process_overlap(action_segments):
 
 def merge_same_action(vid_clip_classification, action_label, merge_threshold):
     """
+        get all the vid classification in the clip with same action_label
+        sort by start index
+
     """
     data_video_label = vid_clip_classification[vid_clip_classification["label"]== action_label]
     data_video_label = data_video_label.reset_index()
     data_video_label = data_video_label.sort_values(by=["start"])
     for j in range(len(data_video_label)-1):
+        # check if next action id from end to start in the merge threashold
+        # if it also valid action lenght, start of j+1 = start
         if data_video_label.loc[j+1, "start"] - data_video_label.loc[j, "end"] <= merge_threshold:
             if abs(data_video_label.loc[j, "start"] - data_video_label.loc[j+1, "end"]) > _INVALID_ACTION_LENGTH:
                 continue
+            # extend the start and end of j+1
             data_video_label.loc[j+1, "start"] = data_video_label.loc[j, "start"]
+            # remove current start and end 
             data_video_label.loc[j, "end"] = 0
             data_video_label.loc[j, "start"] = 0
+    # filter out end = 0
     data_video_label = data_video_label[data_video_label["end"]!=0]
     return data_video_label
 
@@ -147,10 +155,12 @@ def merge_and_remove(clip_classification, merge_threshold=16):
     clip_classification = clip_classification.reset_index(drop=True)
     clip_classification = clip_classification.sort_values(by=["video_id", "label"])
     for vid in clip_classification["video_id"].unique():
+        # cleaning & selecting stuff
         vid_clip_classification = clip_classification[clip_classification["video_id"]==vid]
         vid_action_labels = vid_clip_classification["label"].unique()
         vid_ation_segments = pd.DataFrame([[0, 0, 0, 0]], columns=["video_id", "label", "start", "end"])
         vid_all = pd.DataFrame([[0, 0, 0, 0]], columns=["video_id", "label", "start", "end"])
+        # try merge same action to get 1 action only
         for action_label in vid_action_labels:
             data_video_label = merge_same_action(vid_clip_classification, action_label, merge_threshold)
             vid_all = vid_all._append(data_video_label)
@@ -164,46 +174,76 @@ def merge_and_remove(clip_classification, merge_threshold=16):
 
 
 def clip_to_segment(clip_level_classification):
+    # get classification with label != 0
     data_filtered = clip_level_classification[clip_level_classification["label"]!=0]
     data_filtered["start"] = data_filtered["start"].map(lambda x: int(float(x)))
     data_filtered["end"] = data_filtered["end"].map(lambda x: int(float(x)))
     data_filtered = data_filtered.sort_values(by=["video_id", "label"])
+    '''
+        output of data filtered: activity with label != 0
+            data_filtered = [
+                video_id,
+                label = action_id,
+                start: start_index,
+                end: end_index
+            ]
+    '''
     results = merge_and_remove(data_filtered, merge_threshold=10)
     return results  
 
 
 def reclassify_segment(loc_segments, all_model_results):
+    '''
+        reclassify _TALK_TO_PASSENGER_RIGHT and _TALK_TO_PASSENGER_BACKSEAT by right and rear view
+        filter out action with end = 0
+    '''
     loc_segments = loc_segments.reset_index(drop=True)
     for idx, row_data in loc_segments.iterrows():
+        # hardcode to choose between action _TALK_TO_PASSENGER_RIGHT and _TALK_TO_PASSENGER_BACKSEAT
         if int(row_data["label"]) in [_TALK_TO_PASSENGER_RIGHT, _TALK_TO_PASSENGER_BACKSEAT]:
             vid = row_data["video_id"]
             start = row_data["start"]
             end = row_data["end"]
             pred = 0
+            # another hardcode for right and rear probs result
+            # improve prediction by right and rear view
             for segments_prob_seq in all_model_results[vid]["right"]:
                 pred += np.array(list(map(np.array, segments_prob_seq[max(0, start):end])))
             for segments_prob_seq in all_model_results[vid]["rear"]:
                 pred += np.array(list(map(np.array, segments_prob_seq[max(0, start):end])))
+            
+            # hard code for activity 12 and 11
+            # choose the better avg probs
             prob_12 = np.mean(pred, axis=0)[_TALK_TO_PASSENGER_BACKSEAT]
             prob_11 = np.mean(pred, axis=0)[_TALK_TO_PASSENGER_RIGHT]
             label = _TALK_TO_PASSENGER_BACKSEAT if prob_12 > prob_11 else _TALK_TO_PASSENGER_RIGHT
             loc_segments.loc[idx, "label"] = label
+            # filter out duration > 30s
             if abs(end-start) > 30:
                 loc_segments.loc[idx, "end"] = 0
                 loc_segments.loc[idx, "start"] = 0
+    # filter out end = 0
     loc_segments = loc_segments[loc_segments["end"]!=0]    
     return loc_segments
 
 
 def correct_with_prior_constraints(loc_segments):
+    '''
+        loop through all video
+            check for missing action_id(label)
+
+    '''
     prediction = loc_segments.groupby("video_id")
     submission = []
+    
     for vid in range(1, 11):
         prediction_by_vid = prediction.get_group(vid).reset_index(drop=True)
         unique_labels = np.unique(prediction_by_vid.label.values)
         miss_labels = list(set([l for l in range(1, 16)]).difference(set(unique_labels)))
         prediction_by_label = prediction_by_vid.groupby("label")
         for c in range(1, 16):
+            # for each class, add duration(end - start) try correct miss_action
+            # mainly correct talk to passenger right and backseat
             try:
                 sub_set = prediction_by_label.get_group(c).reset_index(drop=True)
                 if len(sub_set) <= 1:
@@ -213,9 +253,16 @@ def correct_with_prior_constraints(loc_segments):
                     sub_set["diff"] = sub_set["end"] - sub_set["start"]
                     sub_set = sub_set.sort_values(by=["diff"], ascending=False)
                     for idx, row_data in enumerate(sub_set.values):
+                        # row_data = [video_id, action_id, start, end]
                         if idx == 0:
+
                             submission.append([int(row_data[0]), int(row_data[1]), int(row_data[2]), int(row_data[3])]) 
                         else:
+                            '''
+                                :) wth? duplicate confuse action?
+                                if have talk to right and cannot detect talk to back seat
+                                    add the prediction talk to back seat the same as talk to right
+                            '''
                             if row_data[1] == _TALK_TO_PASSENGER_RIGHT and _TALK_TO_PASSENGER_BACKSEAT in miss_labels:
                                 submission.append([int(row_data[0]), _TALK_TO_PASSENGER_BACKSEAT, int(row_data[2]), int(row_data[3]) ]) 
                                 miss_labels.remove(_TALK_TO_PASSENGER_BACKSEAT)
@@ -224,6 +271,7 @@ def correct_with_prior_constraints(loc_segments):
                 
                                 miss_labels.remove(_TALK_TO_PASSENGER_RIGHT)
                             else:
+                                # re add missed action with duration > 8s
                                 if abs(row_data[3]-row_data[2]) > 8:
                                     recall_label = miss_labels[0]
                                     submission.append([int(row_data[0]), recall_label, int(row_data[2]), int(row_data[3]) ]) 

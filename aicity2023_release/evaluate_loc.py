@@ -490,6 +490,7 @@ def main(args, ds_init):
 
 
     row_data = []
+    # turn on model evaluation mode
     model.eval()
     # print("len test_loader {}".format(len(test_loader)))
     from tqdm import tqdm
@@ -508,14 +509,20 @@ def main(args, ds_init):
                 if args.model_ema:
                     logits = model_ema.ema(input_data.cuda())
                 else:
+                    # make prediction
                     logits = model(input_data.cuda())
-                probs = F.softmax(logits, dim=-1)  
+                # probs: array of probs for each class predicted from model
+                # in this case probs of activity id from 0 - 15
+                probs = F.softmax(logits, dim=-1) 
                 row_data.extend(zip(list(batch[1]), batch[2].cpu().numpy().tolist(), probs.cpu().numpy().tolist()))
         except:
             print(f"error at {idx}")
             pass
 
-
+    '''
+        when change clip stride or sampling rate, the result of localization get doubles, triple, ...
+            - try adding sampling rate in calculating the time by frame
+    '''
 
     results = pd.DataFrame(row_data, columns=['filename', 'clip_idx', "prob"])
     results = results.sort_values(by=["filename", 'clip_idx']).reset_index()
