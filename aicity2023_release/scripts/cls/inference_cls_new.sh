@@ -5,14 +5,14 @@
 OUTPUT_DIR='pickles/A2'
 DATA_PATH='data/A2/'
 BATCH_SIZE=12
-NUM_WORKER=6
+NUM_WORKER=16
 NUM_SAMPLE=1
 NUM_FRAMES=16
 WEIGHT_DECAY=0.05
 LEARNING_RATE=0.002
 
 # Define an array of sampling rates
-SAMPLING_RATES=(5 6 7 8 9 10)
+SAMPLING_RATES=(4)
 
 # Define an array of clip strides
 CLIP_STRIDES=(30)
