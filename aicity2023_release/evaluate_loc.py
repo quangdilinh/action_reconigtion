@@ -43,6 +43,10 @@ from pprint import pprint
 
 class VideoInferDataset(Dataset):
     def __init__(self, data_root, video_csv_path, clip_len=16, frame_sample_rate=4, clip_stride=30, short_side_size=224, new_height=224, new_width=224, keep_aspect_ratio=True, crop=False, view="dash"):
+        '''
+            clip len: how many frame per clip
+
+        '''
         self.videos = pd.read_csv(video_csv_path)
         self.crop = crop
         if self.crop:
@@ -73,7 +77,10 @@ class VideoInferDataset(Dataset):
         self.short_side_size = short_side_size
         self.clip_stride = clip_stride
         for data_path in data_list:
+            # 1 path got read 2 time, might affect performance
             vr = VideoReader(data_path, num_threads=1, ctx=cpu(0))
+            # video reader easy to access frame index of video
+            # generate start_indexes by clip_stride
             for start_idx in range(0, len(vr)-1, self.clip_stride):
                 self.data_samples.append(data_path)
                 self.start_frame_idxs.append(start_idx)
@@ -112,6 +119,7 @@ class VideoInferDataset(Dataset):
 
     def loadvideo_decord(self, sample, start_frame_idx=0, sample_rate_scale=1):
         """Load video content using Decord"""
+        # file name
         fname = sample
 
         if not (os.path.exists(fname)):
@@ -132,18 +140,23 @@ class VideoInferDataset(Dataset):
             return []
 
         all_index = []
+        # this part might affect the start and end time prediction
         converted_len = int(self.clip_len * self.frame_sample_rate)
         len_vr = len(vr)
-        if start_frame_idx > len(vr)-1:
-            all_index = [len(vr)-1] * self.clip_len
+        if start_frame_idx > len_vr-1:
+            #if start frame > total frame, get all the frame
+            all_index = [len_vr-1] * self.clip_len
         else:
+            # lenght of clip = clip_len * frame_sample_rate (frames)
             end_idx = start_frame_idx + converted_len
             index = np.linspace(start_frame_idx, end_idx, num=self.clip_len)
             index = np.clip(index, start_frame_idx, len(vr) - 1).astype(np.int64)
             all_index.extend(list(index))
+            # get every sample_rate_scale-th index 
             all_index = all_index[::int(sample_rate_scale)]
         vr.seek(0)
         buffer = vr.get_batch(all_index).asnumpy()
+        # return list of selected frames
         return buffer
 
 
@@ -342,6 +355,7 @@ def get_args():
 
 
 @torch.no_grad()
+# where the start end seconds calculated??
 def inference_video(model, video_path, num_frames, sampling_rate, fps=30, batch_size=8):
     video_reader = decord.VideoReader(video_path, height=224, width=224, num_threads=0, ctx=decord.cpu(0))
     # print(f"video path = {video_path}")
@@ -484,7 +498,14 @@ def main(args, ds_init):
 
 
     start = time.time()
-    dataset = VideoInferDataset(args.data_path, video_csv, frame_sample_rate=args.sampling_rate, clip_stride=args.clip_stride, crop=args.crop, view=args.view)
+    dataset = VideoInferDataset(data_root=args.data_path,
+                                video_csv_path=video_csv,
+                                clip_len=args.num_frames , 
+                                frame_sample_rate=args.sampling_rate, 
+                                clip_stride=args.clip_stride, 
+                                crop=args.crop, 
+                                view=args.view
+                                )
     # test_loader = torch.utils.data.DataLoader(dataset, batch_size=4, num_workers=6)
     test_loader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers)
 

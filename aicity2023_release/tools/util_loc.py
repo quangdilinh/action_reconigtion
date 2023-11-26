@@ -231,6 +231,7 @@ def correct_with_prior_constraints(loc_segments):
     '''
         loop through all video
             check for missing action_id(label)
+                try readd action
 
     '''
     prediction = loc_segments.groupby("video_id")
