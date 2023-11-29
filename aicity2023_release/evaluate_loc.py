@@ -35,7 +35,7 @@ import random
 from einops import rearrange, repeat 
 import pickle
 from torch.utils.data import Dataset
-from decord import VideoReader, cpu
+from decord import VideoReader, cpu, gpu
 import video_transforms as video_transforms
 import volume_transforms as volume_transforms
 import random
@@ -76,6 +76,7 @@ class VideoInferDataset(Dataset):
         self.view = view
         self.short_side_size = short_side_size
         self.clip_stride = clip_stride
+        # this part might seem use CPU to read the video can we optimize it? 
         for data_path in data_list:
             # 1 path got read 2 time, might affect performance
             vr = VideoReader(data_path, num_threads=1, ctx=cpu(0))
@@ -115,8 +116,8 @@ class VideoInferDataset(Dataset):
             return buffer, sample.split("/")[-1].split(".")[0], t_index
         except Exception:
             print("error at {}".format(self.current_path), Exception)
+            raise Exception
     
-
     def loadvideo_decord(self, sample, start_frame_idx=0, sample_rate_scale=1):
         """Load video content using Decord"""
         # file name
@@ -160,7 +161,6 @@ class VideoInferDataset(Dataset):
         buffer = vr.get_batch(all_index).asnumpy()
         # return list of selected frames
         return buffer
-
 
     def __len__(self):
 
@@ -562,9 +562,12 @@ def main(args, ds_init):
     end = time.time()
     duration = datetime.timedelta(seconds=end - start)
     print("Costing: {} s".format(duration))
+    
 
 if __name__ == '__main__':
+    import sys
     opts, ds_init = get_args()
     if opts.output_dir:
         Path(opts.output_dir).mkdir(parents=True, exist_ok=True)
     main(opts, ds_init)
+    sys.exit(0)
