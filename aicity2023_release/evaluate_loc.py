@@ -144,7 +144,9 @@ class VideoInferDataset(Dataset):
         converted_len = int(self.clip_len * self.frame_sample_rate)
         len_vr = len(vr)
         if start_frame_idx > len_vr-1:
-            #if start frame > total frame, get all the frame
+            # if start frame > total frame
+            # return array of last frame clip_len times
+            # why not taking frame_sample_rate into account?
             all_index = [len_vr-1] * self.clip_len
         else:
             # lenght of clip = clip_len * frame_sample_rate (frames)
