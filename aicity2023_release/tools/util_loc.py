@@ -205,8 +205,8 @@ def reclassify_segment(loc_segments, all_model_results):
             start = row_data["start"]
             end = row_data["end"]
             pred = 0
-            # another hardcode for right and rear probs result
-            # improve prediction by right and rear view
+            # another hardcode for right and rear probs result to improve talk to passenger
+            # improve prediction by right and rear view to improve talk to passenger
             for segments_prob_seq in all_model_results[vid]["right"]:
                 pred += np.array(list(map(np.array, segments_prob_seq[max(0, start):end])))
             for segments_prob_seq in all_model_results[vid]["rear"]:
@@ -261,7 +261,7 @@ def correct_with_prior_constraints(loc_segments):
                             submission.append([int(row_data[0]), int(row_data[1]), int(row_data[2]), int(row_data[3])]) 
                         else:
                             '''
-                                :) wth? duplicate confuse action?
+                                :) wth? duplicate confused action?
                                 if have talk to right and cannot detect talk to back seat
                                     add the prediction talk to back seat the same as talk to right
                             '''

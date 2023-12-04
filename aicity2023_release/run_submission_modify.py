@@ -131,60 +131,152 @@ def load_k_fold_probs(pickle_dir, view, k=5):
     return probs
         
     
-def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq):
+# def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode = 'original'):
+#     '''
+#         add buffer to result
+#         prioritize result overrall by view manually by grant higher weight
+#     '''
+
+
+#     '''
+#         alpha: weight for dashboard
+#         beta: weight for right
+#         sigma: weight for rear
+#     original method selectively get the probability by view
+#         rear: 3, 14
+#         right: 5, 6, 7, 8, 15 -> rest
+#         dash: 13
+#         avg by view weight: 0, 1, 2, 4,9,10,11,12
+
+#     '''
+#     if mode == 'original':
+#         # original
+#         alpha, beta, sigma = 0.3, 0.4, 0.3
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
+#         prob_ensemble[:, 4:5] = prob_ensemble[:, 4:5]
+#         prob_ensemble[:, 5:6] = np.array(avg_right_seq)[:, 5:6]
+#         prob_ensemble[:, 6:7] = np.array(avg_right_seq)[:, 6:7]
+#         prob_ensemble[:, 7:9] = np.array(avg_right_seq)[:, 7:9]
+#         prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])*2
+#         prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]*1.5
+#         prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]*1.5
+#     elif mode == 'original_wo_buffer':
+#         # original wo buffer
+#         alpha, beta, sigma = 0.3, 0.4, 0.3
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
+#         prob_ensemble[:, 4:5] = prob_ensemble[:, 4:5]
+#         prob_ensemble[:, 5:6] = np.array(avg_right_seq)[:, 5:6]
+#         prob_ensemble[:, 6:7] = np.array(avg_right_seq)[:, 6:7]
+#         prob_ensemble[:, 7:9] = np.array(avg_right_seq)[:, 7:9]
+#         prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])
+#         prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]
+#         prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]
+#     elif mode == 'rear':
+
+#         # rear
+
+#         alpha, beta, sigma = 0, 0, 1
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_rear_seq)[:, 13:14])*2
+#         prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]*1.5
+#         prob_ensemble[:, 15:] = np.array(avg_rear_seq)[:, 15:]*1.5
+#     elif mode == 'rear_wo_buffer':
+#         alpha, beta, sigma = 0, 0, 1
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_rear_seq)[:, 13:14])
+#         prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]
+#         prob_ensemble[:, 15:] = np.array(avg_rear_seq)[:, 15:]
+#     elif mode == 'right':
+#         # right
+#         alpha, beta, sigma = 0, 1, 0
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_right_seq)[:, 13:14])*2
+#         prob_ensemble[:, 14:15] = np.array(avg_right_seq)[:, 14:15]*1.5
+#         prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]*1.5
+#     elif mode =='right_wo_buffer':
+#         alpha, beta, sigma = 0, 1, 0
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_right_seq)[:, 13:14])
+#         prob_ensemble[:, 14:15] = np.array(avg_right_seq)[:, 14:15]
+#         prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]
+#     elif mode == 'dash':
+#         # dash
+#         alpha, beta, sigma = 1, 0, 0
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])*2
+#         prob_ensemble[:, 14:15] = np.array(avg_dash_seq)[:, 14:15]*1.5
+#         prob_ensemble[:, 15:] = np.array(avg_dash_seq)[:, 15:]*1.5
+#     elif mode == 'dash_wo_buffer':
+#         alpha, beta, sigma = 1, 0, 0
+#         prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
+#         prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])
+#         prob_ensemble[:, 14:15] = np.array(avg_dash_seq)[:, 14:15]
+#         prob_ensemble[:, 15:] = np.array(avg_dash_seq)[:, 15:]
+#     else:
+#         raise Exception("invalid mode")
+
+#     return prob_ensemble
+
+def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='original'):
     '''
-        add buffer to result
-        prioritize result overrall by view manually by grant higher weight
+    Adds buffer to result and prioritizes result overall by view manually by granting higher weight.
     '''
 
-    # alpha, beta, sigma = 0.3, 0.4, 0.3
-    '''
-        alpha: weight for dashboard
-        beta: weight for right
-        sigma: weight for rear
-    selectively get the probability by view
-        rear: 3, 14
-        right: 5, 6, 7, 8, 15 -> rest
-        dash: 13
-        avg by view weight: 0, 1, 2, 4,9,10,11,12
+    # Define weights for dashboard, right, and rear views
+    weights = {
+        'original': (0.3, 0.4, 0.3),
+        'original_less_right': (0.4, 0.1, 0.4),
+        'original_wo_buffer': (0.3, 0.4, 0.3),
+        'rear': (0, 0, 1),
+        'rear_wo_buffer': (0, 0, 1),
+        'right': (0, 1, 0),
+        'right_wo_buffer': (0, 1, 0),
+        'dash': (1, 0, 0),
+        'dash_wo_buffer': (1, 0, 0)
+    }
 
-    '''
-    # # original
-    # alpha, beta, sigma = 0.3, 0.4, 0.3
-    # prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
-    # prob_ensemble[:, 3:4] = np.array(avg_rear_seq)[:, 3:4]
-    # prob_ensemble[:, 4:5] = prob_ensemble[:, 4:5]
-    # prob_ensemble[:, 5:6] = np.array(avg_right_seq)[:, 5:6]
-    # prob_ensemble[:, 6:7] = np.array(avg_right_seq)[:, 6:7]
-    # prob_ensemble[:, 7:9] = np.array(avg_right_seq)[:, 7:9]
-    # prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])*2
-    # prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]*1.5
-    # prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]*1.5
+    if mode not in weights:
+        raise Exception("Invalid mode")
 
-    # # rear
+    alpha, beta, sigma = weights[mode]
 
-    # alpha, beta, sigma = 0, 0, 1
-    # prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
-    # prob_ensemble[:, 13:14] = (np.array(avg_rear_seq)[:, 13:14])*2
-    # prob_ensemble[:, 14:15] = np.array(avg_rear_seq)[:, 14:15]*1.5
-    # prob_ensemble[:, 15:] = np.array(avg_rear_seq)[:, 15:]*1.5
-
-    # right
-    # alpha, beta, sigma = 0, 1, 0
-    # prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
-    # prob_ensemble[:, 13:14] = (np.array(avg_right_seq)[:, 13:14])*2
-    # prob_ensemble[:, 14:15] = np.array(avg_right_seq)[:, 14:15]*1.5
-    # prob_ensemble[:, 15:] = np.array(avg_right_seq)[:, 15:]*1.5
-
-    # dash
-    alpha, beta, sigma = 1, 0, 0
+    # Calculate the ensemble probability
     prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
-    prob_ensemble[:, 13:14] = (np.array(avg_dash_seq)[:, 13:14])*2
-    prob_ensemble[:, 14:15] = np.array(avg_dash_seq)[:, 14:15]*1.5
-    prob_ensemble[:, 15:] = np.array(avg_dash_seq)[:, 15:]*1.5
 
+    # Adjust the probabilities based on the mode
+    if mode in ['original', 'original_wo_buffer','original_less_right']:
+        prob_ensemble[:, 3:4] = avg_rear_seq[:, 3:4]
+        prob_ensemble[:, 5:9] = avg_right_seq[:, 5:9]
+        prob_ensemble[:, 13:14] = avg_dash_seq[:, 13:14]
+        if mode in ['original','original_less_right']:
+            prob_ensemble[:, 13:14] *= 2
+            prob_ensemble[:, 14:] = avg_rear_seq[:, 14:]*1.5
+        else:
+            prob_ensemble[:, 14:] = avg_right_seq[:, 14:]
+    elif mode in ['rear', 'rear_wo_buffer']:
+        prob_ensemble[:, 13:14] = avg_rear_seq[:, 13:14]
+        prob_ensemble[:, 14:] = avg_rear_seq[:, 14:]
+        if mode == 'rear':
+            prob_ensemble[:, 13:14] *= 2
+            prob_ensemble[:, 14:] *= 1.5
+    elif mode in ['right', 'right_wo_buffer']:
+        prob_ensemble[:, 13:14] = avg_right_seq[:, 13:14]
+        prob_ensemble[:, 14:] = avg_right_seq[:, 14:]
+        if mode == 'right':
+            prob_ensemble[:, 13:14] *= 2
+            prob_ensemble[:, 14:] *= 1.5
+    elif mode in ['dash', 'dash_wo_buffer']:
+        prob_ensemble[:, 13:14] = avg_dash_seq[:, 13:14]
+        prob_ensemble[:, 14:] = avg_dash_seq[:, 14:]
+        if mode == 'dash':
+            prob_ensemble[:, 13:14] *= 2
+            prob_ensemble[:, 14:] *= 1.5
 
     return prob_ensemble
+
+
 
 
 def main():
@@ -225,7 +317,11 @@ def main():
         avg_dash_seq = np.mean(all_dash_probs, axis=0)
         avg_right_seq = np.mean(all_right_probs, axis=0)
         avg_rear_seq = np.mean(all_rear_probs, axis=0)
-        
+
+        # avg_dash_seq = np.max(all_dash_probs, axis=0)
+        # avg_right_seq = np.max(all_right_probs, axis=0)
+        # avg_rear_seq = np.max(all_rear_probs, axis=0)
+
         avg_dash_seq = smoothing(np.array(avg_dash_seq), k=1)
         avg_right_seq = smoothing(np.array(avg_right_seq), k=1)
         avg_rear_seq = smoothing(np.array(avg_rear_seq), k=1)
@@ -233,7 +329,7 @@ def main():
         length = min(avg_dash_seq.shape[0], avg_right_seq.shape[0], avg_rear_seq.shape[0])
         avg_dash_seq, avg_right_seq, avg_rear_seq = avg_dash_seq[:length, :],avg_right_seq[:length, :],avg_rear_seq[:length, :]
 
-        prob_ensemble = multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq)
+        prob_ensemble = multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq,mode = 'original_less_right')
         vid = _FILENAME_TO_ID[right_vid]
         prob_seq = np.array(prob_ensemble)
         prob_seq = np.squeeze(prob_seq)
@@ -250,7 +346,7 @@ def main():
     loc_segments = util_loc.clip_to_segment(clip_classification)
     loc_segments = util_loc.reclassify_segment(loc_segments, all_model_results)
     loc_segments =  util_loc.correct_with_prior_constraints(loc_segments)
-    with open("final_submission_dash.txt", "w") as fp:
+    with open("final_submission_less_right.txt", "w") as fp:
         for (vid, label, start, end) in loc_segments:
             fp.writelines("{} {} {} {}\n".format(int(vid), label, start, end))
     

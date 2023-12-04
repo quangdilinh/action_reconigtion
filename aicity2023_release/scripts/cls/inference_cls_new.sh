@@ -12,10 +12,10 @@ WEIGHT_DECAY=0.05
 LEARNING_RATE=0.002
 
 # Define an array of sampling rates
-SAMPLING_RATES=(4)
+SAMPLING_RATES=(5 6 7 8 9 10)
 
 # Define an array of clip strides
-CLIP_STRIDES=(30)
+CLIP_STRIDES=(30 31 32 33 34 35)
 
 # Define the views and folds
 views=("dash" "right" "rear")
