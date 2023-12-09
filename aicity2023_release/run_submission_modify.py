@@ -224,7 +224,8 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='origina
     Adds buffer to result and prioritizes result overall by view manually by granting higher weight.
     '''
 
-    # Define weights for dashboard, right, and rear views
+    # Define weights for 
+    # dashboard, right, and rear views
     weights = {
         'original': (0.3, 0.4, 0.3),
         'original_less_right': (0.4, 0.1, 0.4),
@@ -234,7 +235,9 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='origina
         'right': (0, 1, 0),
         'right_wo_buffer': (0, 1, 0),
         'dash': (1, 0, 0),
-        'dash_wo_buffer': (1, 0, 0)
+        'dash_wo_buffer': (1, 0, 0),
+        'all_avg': (1/3,1/3,1/3),
+        'all_avg_wo_buffer':(1/3,1/3,1/3)
     }
 
     if mode not in weights:
@@ -254,6 +257,7 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='origina
             prob_ensemble[:, 13:14] *= 2
             prob_ensemble[:, 14:] = avg_rear_seq[:, 14:]*1.5
         else:
+            # original_wo_buffer
             prob_ensemble[:, 14:] = avg_right_seq[:, 14:]
     elif mode in ['rear', 'rear_wo_buffer']:
         prob_ensemble[:, 13:14] = avg_rear_seq[:, 13:14]
@@ -267,13 +271,20 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='origina
         if mode == 'right':
             prob_ensemble[:, 13:14] *= 2
             prob_ensemble[:, 14:] *= 1.5
+        # no else => do nothing = righ_wo_buffer
     elif mode in ['dash', 'dash_wo_buffer']:
         prob_ensemble[:, 13:14] = avg_dash_seq[:, 13:14]
         prob_ensemble[:, 14:] = avg_dash_seq[:, 14:]
         if mode == 'dash':
             prob_ensemble[:, 13:14] *= 2
             prob_ensemble[:, 14:] *= 1.5
-
+        # no else => do nothing = dash_wo_buffer
+    elif mode in ['all_avg']:
+        if mode == 'all_avg':
+            prob_ensemble[:, 13:14] *= 2
+            prob_ensemble[:, 14:] *= 1.5
+        # else all_avg_wo_buffer
+    
     return prob_ensemble
 
 
@@ -290,8 +301,8 @@ def main():
     localization = []
     clip_classification = []
     # pickle_dir = "pickles/A2"
-    # pickle_dir = "pickles/6_6_1_16_4_0.05_0.002_30"
-    pickle_dir = "pickles/author"
+    pickle_dir = "pickles/6_6_1_16_4_0.05_0.002_30"
+    # pickle_dir = "pickles/author"
     # each view & fold will have pickel format: ['filename', 'clip_idx', "prob"]
     k_flod_dash_probs = load_k_fold_probs(pickle_dir, "dash")
     k_flod_right_probs = load_k_fold_probs(pickle_dir, "right")
@@ -329,7 +340,7 @@ def main():
         length = min(avg_dash_seq.shape[0], avg_right_seq.shape[0], avg_rear_seq.shape[0])
         avg_dash_seq, avg_right_seq, avg_rear_seq = avg_dash_seq[:length, :],avg_right_seq[:length, :],avg_rear_seq[:length, :]
 
-        prob_ensemble = multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq,mode = 'original_less_right')
+        prob_ensemble = multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq,mode = 'original')
         vid = _FILENAME_TO_ID[right_vid]
         prob_seq = np.array(prob_ensemble)
         prob_seq = np.squeeze(prob_seq)
@@ -346,7 +357,7 @@ def main():
     loc_segments = util_loc.clip_to_segment(clip_classification)
     loc_segments = util_loc.reclassify_segment(loc_segments, all_model_results)
     loc_segments =  util_loc.correct_with_prior_constraints(loc_segments)
-    with open("final_submission_less_right.txt", "w") as fp:
+    with open("A2_submission_all_avg_wo_buffer.txt", "w") as fp:
         for (vid, label, start, end) in loc_segments:
             fp.writelines("{} {} {} {}\n".format(int(vid), label, start, end))
     
