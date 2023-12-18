@@ -1,17 +1,17 @@
 action_id,Label
-0,00.Normal
-1,01.Drinking
-2,02.Phone (right)
-3,03.Phone (left)
-4,04.Eating
-5,05.Text (Right)
-6,06.Text (Left)
-7,07.Reaching behind
-8,08.Adjust panel
-9,09.Pick up (Driver)
-10,10.Pick up (Passenger)
-11,11.Talk right
-12,12.Talk backseat
-13,13.yawning
-14,14.Hand on head
-15,15.Singing or dancing
+0,00_
+1,01_
+2,02_
+3,03_
+4,04_
+5,05_
+6,06_
+7,07_
+8,08_
+9,09_
+10,10_
+11,11_
+12,12_
+13,13_
+14,14_
+15,15_

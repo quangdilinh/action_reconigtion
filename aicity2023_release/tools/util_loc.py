@@ -137,6 +137,9 @@ def merge_same_action(vid_clip_classification, action_label, merge_threshold):
     return data_video_label
 
 def remove_noisy_action(noisy_actions, noise_length_threshold=2):
+    '''
+        remove long action (1,7,8,9,10) below threashold
+    '''
     short_term_actions =  noisy_actions[noisy_actions["label"].isin([1, 7, 8, 9, 10])]
     long_term_actions = noisy_actions[~noisy_actions["label"].isin([1, 7, 8, 9, 10])]
     long_term_actions  = long_term_actions[(long_term_actions["end"] - long_term_actions["start"] > noise_length_threshold)]
@@ -174,7 +177,10 @@ def merge_and_remove(clip_classification, merge_threshold=16):
 
 
 def clip_to_segment(clip_level_classification):
-    # get classification with label != 0
+    ''' 
+        get classification with label != 0
+        merge and remove
+    '''
     data_filtered = clip_level_classification[clip_level_classification["label"]!=0]
     data_filtered["start"] = data_filtered["start"].map(lambda x: int(float(x)))
     data_filtered["end"] = data_filtered["end"].map(lambda x: int(float(x)))

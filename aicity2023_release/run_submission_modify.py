@@ -113,6 +113,7 @@ def smoothing(x, k=3):
     e[e >= l] = l - 1
     y = np.zeros(x.shape)
     for i in range(l):
+        # if max probs in the array is action 9, 10 ,14 then no avg? 
         if int(np.argmax(x[i], axis=-1) ) in [9, 10,14]:
             y[i] = x[i]
         else:
@@ -238,16 +239,17 @@ def multi_view_ensemble(avg_dash_seq, avg_right_seq, avg_rear_seq, mode='origina
         'dash_wo_buffer': (1, 0, 0),
         'all_avg': (1/3,1/3,1/3),
         'all_avg_wo_buffer':(1/3,1/3,1/3)
+
     }
 
     if mode not in weights:
         raise Exception("Invalid mode")
 
     alpha, beta, sigma = weights[mode]
-
+    
     # Calculate the ensemble probability
     prob_ensemble = avg_dash_seq * alpha + avg_right_seq * beta + avg_rear_seq * sigma
-
+    # prob_ensemble = (avg_dash_seq + avg_right_seq + avg_rear_seq)
     # Adjust the probabilities based on the mode
     if mode in ['original', 'original_wo_buffer','original_less_right']:
         prob_ensemble[:, 3:4] = avg_rear_seq[:, 3:4]
@@ -301,8 +303,8 @@ def main():
     localization = []
     clip_classification = []
     # pickle_dir = "pickles/A2"
-    pickle_dir = "pickles/6_6_1_16_4_0.05_0.002_30"
-    # pickle_dir = "pickles/author"
+    # pickle_dir = "pickles/6_6_1_16_4_0.05_0.002_30"
+    pickle_dir = "pickles/author"
     # each view & fold will have pickel format: ['filename', 'clip_idx', "prob"]
     k_flod_dash_probs = load_k_fold_probs(pickle_dir, "dash")
     k_flod_right_probs = load_k_fold_probs(pickle_dir, "right")
@@ -325,6 +327,7 @@ def main():
         all_right_probs = np.stack([np.array(list(map(np.array, right_prob[right_vid]))) for right_prob in k_flod_right_probs])
         all_rear_probs = np.stack([np.array(list(map(np.array, rear_prob[rear_vid]))) for rear_prob in k_flod_rear_probs])
 
+        # avg all fold
         avg_dash_seq = np.mean(all_dash_probs, axis=0)
         avg_right_seq = np.mean(all_right_probs, axis=0)
         avg_rear_seq = np.mean(all_rear_probs, axis=0)
@@ -333,10 +336,11 @@ def main():
         # avg_right_seq = np.max(all_right_probs, axis=0)
         # avg_rear_seq = np.max(all_rear_probs, axis=0)
 
-        avg_dash_seq = smoothing(np.array(avg_dash_seq), k=1)
-        avg_right_seq = smoothing(np.array(avg_right_seq), k=1)
-        avg_rear_seq = smoothing(np.array(avg_rear_seq), k=1)
-    
+        # avg_dash_seq = smoothing(np.array(avg_dash_seq), k=1)
+        # avg_right_seq = smoothing(np.array(avg_right_seq), k=1)
+        # avg_rear_seq = smoothing(np.array(avg_rear_seq), k=1)
+
+        # handle when multiple view can have diferrent duration -> get min duration
         length = min(avg_dash_seq.shape[0], avg_right_seq.shape[0], avg_rear_seq.shape[0])
         avg_dash_seq, avg_right_seq, avg_rear_seq = avg_dash_seq[:length, :],avg_right_seq[:length, :],avg_rear_seq[:length, :]
 
